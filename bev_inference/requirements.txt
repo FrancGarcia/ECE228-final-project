@@ -1,0 +1,11 @@
+numpy==1.26.4
+ultralytics>=8.3.225
+transformers
+accelerate
+opencv-python-headless
+matplotlib
+scipy
+torch
+torchvision
+tqdm
+Pillow

@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Generated / downloaded data (not source)
+bev_inference/kitti_inputs/
+bev_inference/outputs/
+bev_inference/vid_frames/
+bev_inference/vid_input/*
+!bev_inference/vid_input/.gitkeep
+bev_inference/inputs/*
+!bev_inference/inputs/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Environments
+.venv/
+venv/
+env/
