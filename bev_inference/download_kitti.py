@@ -118,7 +118,7 @@ def download_and_extract(drive: str, num: int, force: bool) -> None:
     current_drive = meta.get("drive")
 
     if existing and current_drive and current_drive != drive:
-        print(f"Switching drive: {current_drive} → {drive}  (replacing {len(existing)} existing frames)")
+        print(f"Switching drive: {current_drive} -> {drive}  (replacing {len(existing)} existing frames)")
         force = True
 
     if len(existing) >= num and not force:
@@ -150,7 +150,7 @@ def download_and_extract(drive: str, num: int, force: bool) -> None:
         try:
             urlretrieve(url, str(zip_path), reporthook=_reporthook)
         except HTTPError as e:
-            print(f"\n\nERROR: Download failed — HTTP {e.code} {e.reason}")
+            print(f"\n\nERROR: Download failed - HTTP {e.code} {e.reason}")
             if e.code == 404:
                 print(f"  Drive '{drive}' was not found on the KITTI server.")
                 print(f"  This may indicate the drive has been removed.\n")

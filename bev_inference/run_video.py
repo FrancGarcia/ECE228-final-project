@@ -5,13 +5,13 @@ BEV Fusion inference on a landscape video.
 Takes a video file from ``vid_input/`` (any common format: mp4, mov,
 avi, mkv, webm, ...), splits it into temporally ordered frames, runs
 YOLOv8 detection + Depth Anything V2 metric depth, fuses them into a
-bird's-eye-view, and writes all outputs to ``outputs/`` — exactly like
+bird's-eye-view, and writes all outputs to ``outputs/`` - exactly like
 ``run_kitti.py``, but the frames come from a video instead of disk.
 
 Frame extraction is "chunked" by sampling at a target frame rate
 (default 10 Hz, matching KITTI) and optionally down-scaling each frame
 to an optimal processing width (default 1280 px). This keeps inference
-fast and memory-light without sacrificing detection/depth accuracy —
+fast and memory-light without sacrificing detection/depth accuracy -
 YOLOv8 internally works at 640 px and Depth Anything at its own fixed
 resolution, so widths beyond ~1280 px add cost with no quality gain.
 
@@ -62,33 +62,33 @@ import torch
 from PIL import Image
 from tqdm import tqdm
 
-# ── Paths (relative to this script) ──────────────────────────────
+# Paths (relative to this script)
 SCRIPT_DIR      = Path(__file__).resolve().parent
 VID_INPUT_DIR   = SCRIPT_DIR / "vid_input"
 VID_FRAMES_DIR  = SCRIPT_DIR / "vid_frames"
 OUTPUT_DIR      = SCRIPT_DIR / "outputs"
 DEFAULT_WEIGHTS = SCRIPT_DIR.parent / "yolov8-finetuning" / "best.pt"
 
-# ── Camera intrinsics (set at runtime from video size + HFOV) ────
+# Camera intrinsics (set at runtime from video size + HFOV)
 FX = 721.5377
 FY = 721.5377
 CX = 609.5593
 CY = 172.8540
 
-# ── Inference thresholds ─────────────────────────────────────────
+# Inference thresholds
 YOLO_CONF   = 0.30
 YOLO_IOU    = 0.45
 DEPTH_MAX_M = 80.0
 DEPTH_MIN_M = 1.0
 
-# ── BEV canvas parameters ───────────────────────────────────────
+# BEV canvas parameters
 BEV_RANGE_Z = 50.0
 BEV_RANGE_X = 30.0
 BEV_PPM     = 10
 BEV_H       = int(BEV_RANGE_Z * BEV_PPM)
 BEV_W       = int(BEV_RANGE_X * 2 * BEV_PPM)
 
-# ── Class definitions ───────────────────────────────────────────
+# Class definitions
 CLASS_NAMES    = {0: "Car", 1: "Pedestrian", 2: "Cyclist"}
 CLASS_BGR      = {0: (235, 99, 37), 1: (74, 163, 22), 2: (6, 119, 217)}
 CLASS_RGB      = {
@@ -100,22 +100,20 @@ CLASS_RADIUS_M = {0: 1.5, 1: 0.4, 2: 0.6}
 
 DEPTH_MODEL_ID = "depth-anything/Depth-Anything-V2-Metric-Outdoor-Small-hf"
 
-# ── Video / frame-extraction parameters ─────────────────────────
+# Video / frame-extraction parameters
 VIDEO_EXTS      = {".mp4", ".mov", ".avi", ".mkv", ".webm",
                    ".m4v", ".mpg", ".mpeg", ".wmv", ".flv"}
-DEFAULT_TGT_FPS = 10.0     # KITTI raw is 10 Hz — good default for BEV
+DEFAULT_TGT_FPS = 10.0     # KITTI raw is 10 Hz - good default for BEV
 DEFAULT_MAXFR   = 120      # cap to keep runtime sane (None = unlimited)
 PROC_MAX_WIDTH  = 1280     # downscale wider frames to this for processing
 DEFAULT_HFOV    = 60.0     # assumed horizontal FoV (deg) when no intrinsics
 
-# ── GIF parameters ──────────────────────────────────────────────
+# GIF parameters
 FRAME_DURATION_MS = 150
 GIF_SCALE         = 0.6
 
 
-# ═════════════════════════════════════════════════════════════════
 # Helpers
-# ═════════════════════════════════════════════════════════════════
 
 def get_device() -> str:
     if torch.cuda.is_available():
@@ -144,9 +142,7 @@ def install_deps() -> None:
     print("Dependencies installed.")
 
 
-# ═════════════════════════════════════════════════════════════════
 # Video frame extraction (chunking)
-# ═════════════════════════════════════════════════════════════════
 
 def find_video(explicit: str | None) -> Path:
     if explicit:
@@ -206,7 +202,7 @@ def extract_frames(video_path: Path, target_fps: float,
     print(f"  Sampling   : every {stride} frame(s) -> ~{src_fps / stride:.1f} fps")
     if scale < 1.0:
         print(f"  Compressing: {src_w}x{src_h} -> {out_w}x{out_h} "
-              f"({scale * 100:.0f}% — optimal for inference)")
+              f"({scale * 100:.0f}% - optimal for inference)")
     else:
         print(f"  Resolution : {out_w}x{out_h} (no downscale needed)")
 
@@ -243,9 +239,7 @@ def extract_frames(video_path: Path, target_fps: float,
     return saved, out_w, out_h
 
 
-# ═════════════════════════════════════════════════════════════════
 # Depth inference / projection
-# ═════════════════════════════════════════════════════════════════
 
 def predict_depth(pil_image: Image.Image, depth_model, depth_processor, device: str) -> np.ndarray:
     with torch.inference_mode():
@@ -314,9 +308,7 @@ def colorise_depth(depth_map: np.ndarray, vmin: float = 0.0, vmax: float = DEPTH
     return (rgba[:, :, :3] * 255).astype(np.uint8)
 
 
-# ═════════════════════════════════════════════════════════════════
 # Per-frame fusion
-# ═════════════════════════════════════════════════════════════════
 
 def process_image(img_path: Path, yolo_model, depth_model, depth_processor, device: str) -> dict:
     t0 = time.time()
@@ -372,7 +364,7 @@ def process_image(img_path: Path, yolo_model, depth_model, depth_processor, devi
     axes[0].axis("off")
 
     axes[1].imshow(depth_vis)
-    axes[1].set_title(f"Depth Anything V2 (0 – {DEPTH_MAX_M:.0f}m)", fontsize=10)
+    axes[1].set_title(f"Depth Anything V2 (0 - {DEPTH_MAX_M:.0f}m)", fontsize=10)
     axes[1].axis("off")
 
     axes[2].imshow(cv2.cvtColor(bev_canvas, cv2.COLOR_BGR2RGB), origin="upper",
@@ -399,9 +391,7 @@ def process_image(img_path: Path, yolo_model, depth_model, depth_processor, devi
             "elapsed_s": round(elapsed, 3), "detections": detections}
 
 
-# ═════════════════════════════════════════════════════════════════
 # GIF generation
-# ═════════════════════════════════════════════════════════════════
 
 def _load_frames_sorted(pattern: str, scale: float = 1.0) -> list:
     paths = sorted(_glob.glob(pattern))
@@ -421,7 +411,7 @@ def _load_frames_sorted(pattern: str, scale: float = 1.0) -> list:
 
 def _save_gif(frames: list, out_path: str, duration_ms: int = 150) -> bool:
     if not frames:
-        print(f"  No frames for {os.path.basename(out_path)} — skipped.")
+        print(f"  No frames for {os.path.basename(out_path)} - skipped.")
         return False
     frames[0].save(out_path, save_all=True, append_images=frames[1:],
                    duration=duration_ms, loop=0, optimize=True)
@@ -481,9 +471,7 @@ def generate_gifs() -> None:
     print("GIF generation complete.")
 
 
-# ═════════════════════════════════════════════════════════════════
 # Validation statistics
-# ═════════════════════════════════════════════════════════════════
 
 def print_validation_stats(frame_stats: list) -> None:
     if not frame_stats:
@@ -573,9 +561,7 @@ def save_summary(frame_stats: list, meta: dict) -> None:
     print(f"  Summary written to {summary_path}")
 
 
-# ═════════════════════════════════════════════════════════════════
 # Intrinsics
-# ═════════════════════════════════════════════════════════════════
 
 def set_intrinsics(width: int, height: int, args) -> dict:
     global FX, FY, CX, CY
@@ -596,13 +582,11 @@ def set_intrinsics(width: int, height: int, args) -> dict:
     return {"fx": FX, "fy": FY, "cx": CX, "cy": CY, "source": source}
 
 
-# ═════════════════════════════════════════════════════════════════
 # Main
-# ═════════════════════════════════════════════════════════════════
 
 def main():
     parser = argparse.ArgumentParser(
-        description="BEV Fusion — run on a landscape video from vid_input/")
+        description="BEV Fusion - run on a landscape video from vid_input/")
     parser.add_argument("--video", type=str, default=None,
                         help="Video filename in vid_input/ (default: first found)")
     parser.add_argument("--target-fps", type=float, default=DEFAULT_TGT_FPS,

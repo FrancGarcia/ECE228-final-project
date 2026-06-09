@@ -7,7 +7,7 @@ runs YOLOv8 detection + Depth Anything V2 metric depth, fuses them into
 a bird's-eye-view, and writes all outputs to ``outputs/``.
 
 Outputs include per-frame PNGs and animated GIFs (detection, depth, BEV,
-composite).  Validation statistics are printed to the terminal.
+composite). Validation statistics are printed to the terminal.
 
 The ``outputs/`` folder is **deleted and recreated** on every run.
 
@@ -26,7 +26,6 @@ import shutil
 import subprocess
 import sys
 import time
-from collections import defaultdict
 from pathlib import Path
 
 import cv2
@@ -37,32 +36,32 @@ import torch
 from PIL import Image
 from tqdm import tqdm
 
-# ── Paths (relative to this script) ──────────────────────────────
+# Paths (relative to this script)
 SCRIPT_DIR      = Path(__file__).resolve().parent
 INPUT_DIR       = SCRIPT_DIR / "inputs"
 OUTPUT_DIR      = SCRIPT_DIR / "outputs"
 DEFAULT_WEIGHTS = SCRIPT_DIR.parent / "yolov8-finetuning" / "best.pt"
 
-# ── KITTI camera intrinsics (standard camera_2, left colour) ─────
+# KITTI camera intrinsics (standard camera_2, left colour)
 KITTI_FX = 721.5377
 KITTI_FY = 721.5377
 KITTI_CX = 609.5593
 KITTI_CY = 172.8540
 
-# ── Inference thresholds ─────────────────────────────────────────
+# Inference thresholds
 YOLO_CONF   = 0.30
 YOLO_IOU    = 0.45
 DEPTH_MAX_M = 80.0
 DEPTH_MIN_M = 1.0
 
-# ── BEV canvas parameters ───────────────────────────────────────
+# BEV canvas parameters
 BEV_RANGE_Z = 50.0
 BEV_RANGE_X = 30.0
 BEV_PPM     = 10
 BEV_H       = int(BEV_RANGE_Z * BEV_PPM)
 BEV_W       = int(BEV_RANGE_X * 2 * BEV_PPM)
 
-# ── Class definitions ───────────────────────────────────────────
+# Class definitions
 CLASS_NAMES    = {0: "Car", 1: "Pedestrian", 2: "Cyclist"}
 CLASS_BGR      = {0: (235, 99, 37), 1: (74, 163, 22), 2: (6, 119, 217)}
 CLASS_RGB      = {
@@ -74,14 +73,12 @@ CLASS_RADIUS_M = {0: 1.5, 1: 0.4, 2: 0.6}
 
 DEPTH_MODEL_ID = "depth-anything/Depth-Anything-V2-Metric-Outdoor-Small-hf"
 
-# ── GIF parameters ──────────────────────────────────────────────
+# GIF parameters
 FRAME_DURATION_MS = 150
 GIF_SCALE         = 0.6
 
 
-# ═════════════════════════════════════════════════════════════════
 # Helpers
-# ═════════════════════════════════════════════════════════════════
 
 def get_device() -> str:
     if torch.cuda.is_available():
@@ -110,7 +107,7 @@ def install_deps() -> None:
     print("Dependencies installed.")
 
 
-# ── Depth inference ──────────────────────────────────────────────
+# Depth inference
 
 def predict_depth(pil_image: Image.Image, depth_model, depth_processor, device: str) -> np.ndarray:
     with torch.inference_mode():
@@ -179,9 +176,7 @@ def colorise_depth(depth_map: np.ndarray, vmin: float = 0.0, vmax: float = DEPTH
     return (rgba[:, :, :3] * 255).astype(np.uint8)
 
 
-# ═════════════════════════════════════════════════════════════════
 # Per-image fusion
-# ═════════════════════════════════════════════════════════════════
 
 def process_image(img_path: Path, yolo_model, depth_model, depth_processor, device: str) -> dict:
     t0 = time.time()
@@ -237,7 +232,7 @@ def process_image(img_path: Path, yolo_model, depth_model, depth_processor, devi
     axes[0].axis("off")
 
     axes[1].imshow(depth_vis)
-    axes[1].set_title(f"Depth Anything V2 (0 – {DEPTH_MAX_M:.0f}m)", fontsize=10)
+    axes[1].set_title(f"Depth Anything V2 (0 - {DEPTH_MAX_M:.0f}m)", fontsize=10)
     axes[1].axis("off")
 
     axes[2].imshow(cv2.cvtColor(bev_canvas, cv2.COLOR_BGR2RGB), origin="upper",
@@ -264,9 +259,7 @@ def process_image(img_path: Path, yolo_model, depth_model, depth_processor, devi
             "elapsed_s": round(elapsed, 3), "detections": detections}
 
 
-# ═════════════════════════════════════════════════════════════════
 # GIF generation
-# ═════════════════════════════════════════════════════════════════
 
 def _load_frames_sorted(pattern: str, scale: float = 1.0) -> list:
     paths = sorted(_glob.glob(pattern))
@@ -286,7 +279,7 @@ def _load_frames_sorted(pattern: str, scale: float = 1.0) -> list:
 
 def _save_gif(frames: list, out_path: str, duration_ms: int = 150) -> bool:
     if not frames:
-        print(f"  No frames for {os.path.basename(out_path)} — skipped.")
+        print(f"  No frames for {os.path.basename(out_path)} - skipped.")
         return False
     frames[0].save(out_path, save_all=True, append_images=frames[1:],
                    duration=duration_ms, loop=0, optimize=True)
@@ -346,9 +339,7 @@ def generate_gifs() -> None:
     print("GIF generation complete.")
 
 
-# ═════════════════════════════════════════════════════════════════
 # Validation statistics
-# ═════════════════════════════════════════════════════════════════
 
 def print_validation_stats(frame_stats: list) -> None:
     if not frame_stats:
@@ -438,12 +429,10 @@ def save_summary(frame_stats: list) -> None:
     print(f"  Summary written to {summary_path}")
 
 
-# ═════════════════════════════════════════════════════════════════
 # Main
-# ═════════════════════════════════════════════════════════════════
 
 def main():
-    parser = argparse.ArgumentParser(description="BEV Fusion — run on user-supplied images in inputs/")
+    parser = argparse.ArgumentParser(description="BEV Fusion - run on user-supplied images in inputs/")
     parser.add_argument("--weights", type=str,
                         default=os.environ.get("BEV_WEIGHTS", str(DEFAULT_WEIGHTS)),
                         help="Path to YOLOv8 checkpoint (default: ../yolov8-finetuning/best.pt)")
